@@ -450,7 +450,7 @@ impl<'de, 'b> de::MapAccess<'de> for MapVisitor<'de, 'b> {
                     let name = self.tables[pos]
                         .header
                         .iter()
-                        .map(|k| k.1.to_owned())
+                        .map(|k| k.1.clone())
                         .collect::<Vec<_>>()
                         .join(".");
                     return Err(self.de.error(at, ErrorKind::DuplicateTable(name)));
@@ -682,7 +682,7 @@ impl<'de, 'b> de::Deserializer<'de> for MapVisitor<'de, 'b> {
         if table.header.is_empty() {
             return Err(self.de.error(self.cur, ErrorKind::EmptyTableKey));
         }
-        let name = table.header[table.header.len() - 1].1.to_owned();
+        let name = table.header[table.header.len() - 1].1.clone();
         visitor.visit_enum(DottedTableDeserializer {
             name,
             value: Value {

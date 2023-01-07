@@ -1140,7 +1140,7 @@ impl<'a, 'b> ser::SerializeStruct for SerializeTable<'a, 'b> {
         match *self {
             SerializeTable::Datetime(ref mut ser) => {
                 if key == datetime::FIELD {
-                    value.serialize(DateStrEmitter(*ser))?;
+                    value.serialize(DateStrEmitter(ser))?;
                 } else {
                     return Err(Error::DateInvalid);
                 }

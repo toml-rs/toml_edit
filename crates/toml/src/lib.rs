@@ -137,6 +137,7 @@
 //! [`serde`]: https://serde.rs/
 //! [serde]: https://serde.rs/
 
+#![allow(clippy::bool_to_int_with_if)]
 #![deny(missing_docs)]
 #![warn(rust_2018_idioms)]
 // Makes rustc abort compilation if there are any unsafe blocks in the crate.
