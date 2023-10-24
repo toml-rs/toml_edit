@@ -7,7 +7,6 @@ use serde::de::DeserializeOwned;
 mod array;
 mod datetime;
 mod key;
-mod spanned;
 mod table;
 mod table_enum;
 mod value;
@@ -15,7 +14,6 @@ mod value;
 use array::ArrayDeserializer;
 use datetime::DatetimeDeserializer;
 use key::KeyDeserializer;
-use spanned::SpannedDeserializer;
 use table::TableMapAccess;
 use table_enum::TableEnumDeserializer;
 
