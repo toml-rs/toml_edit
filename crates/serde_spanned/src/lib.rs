@@ -17,6 +17,8 @@
 
 mod spanned;
 pub use crate::spanned::Spanned;
+#[cfg(feature = "serde")]
+pub mod de;
 
 #[doc(hidden)]
 #[cfg(feature = "serde")]

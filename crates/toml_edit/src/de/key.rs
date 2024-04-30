@@ -54,9 +54,14 @@ impl<'de> serde::de::Deserializer<'de> for KeyDeserializer {
     where
         V: serde::de::Visitor<'de>,
     {
-        if serde_spanned::__unstable::is_spanned(name, fields) {
+        if serde_spanned::de::SpannedDeserializer::<&str, Error>::is_spanned(name, fields) {
             if let Some(span) = self.span.clone() {
-                return visitor.visit_map(super::SpannedDeserializer::new(self.key.as_str(), span));
+                return visitor.visit_map(
+                    serde_spanned::de::SpannedDeserializer::<&str, Error>::new(
+                        self.key.as_str(),
+                        span,
+                    ),
+                );
             }
         }
         self.deserialize_any(visitor)

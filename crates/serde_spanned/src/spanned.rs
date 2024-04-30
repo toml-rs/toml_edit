@@ -113,6 +113,16 @@ impl<T> Spanned<T> {
     }
 }
 
+#[cfg(feature = "serde")]
+impl<T> Spanned<T> {
+    pub(crate) const START_FIELD: &str = START_FIELD;
+    pub(crate) const END_FIELD: &str = END_FIELD;
+    pub(crate) const VALUE_FIELD: &str = VALUE_FIELD;
+    pub(crate) fn is_spanned(name: &'static str, fields: &'static [&'static str]) -> bool {
+        is_spanned(name, fields)
+    }
+}
+
 impl std::borrow::Borrow<str> for Spanned<String> {
     fn borrow(&self) -> &str {
         self.get_ref()
