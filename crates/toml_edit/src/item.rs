@@ -171,10 +171,11 @@ impl Item {
             Ok(i) => i,
             Err(i) => i,
         };
-        let other = match other.into_array_of_tables().map(crate::Item::ArrayOfTables) {
-            Ok(i) => i,
-            Err(i) => i,
-        };
+        let other =
+            match other.into_array_of_tables().map(crate::Item::ArrayOfTables) {
+                Ok(i) => i,
+                Err(i) => i,
+            };
         *self = other;
     }
     /// Returns true iff `self` is a value.
@@ -277,17 +278,20 @@ impl Item {
     }
 
     /// Casts `self` to either a table or an inline table.
-    pub fn as_table_like(&self) -> Option<&dyn TableLike> {
+    pub fn as_table_like(&self) -> Option<&(dyn TableLike + Send + Sync)> {
         self.as_table()
-            .map(|t| t as &dyn TableLike)
-            .or_else(|| self.as_inline_table().map(|t| t as &dyn TableLike))
+            .map(|t| t as &(dyn TableLike + Send + Sync))
+            .or_else(|| {
+                self.as_inline_table()
+                    .map(|t| t as &(dyn TableLike + Send + Sync))
+            })
     }
 
     /// Casts `self` to either a table or an inline table.
-    pub fn as_table_like_mut(&mut self) -> Option<&mut dyn TableLike> {
+    pub fn as_table_like_mut(&mut self) -> Option<&mut (dyn TableLike + Send + Sync)> {
         match self {
-            Item::Table(t) => Some(t as &mut dyn TableLike),
-            Item::Value(Value::InlineTable(t)) => Some(t as &mut dyn TableLike),
+            Item::Table(t) => Some(t as &mut (dyn TableLike + Send + Sync)),
+            Item::Value(Value::InlineTable(t)) => Some(t as &mut (dyn TableLike + Send + Sync)),
             _ => None,
         }
     }

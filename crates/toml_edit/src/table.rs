@@ -521,11 +521,11 @@ impl TableKeyValue {
 }
 
 /// An owned iterator type over `Table`'s key/value pairs.
-pub type IntoIter = Box<dyn Iterator<Item = (InternalString, Item)>>;
+pub type IntoIter = Box<dyn Iterator<Item = (InternalString, Item)> + Send + Sync>;
 /// An iterator type over `Table`'s key/value pairs.
-pub type Iter<'a> = Box<dyn Iterator<Item = (&'a str, &'a Item)> + 'a>;
+pub type Iter<'a> = Box<dyn Iterator<Item = (&'a str, &'a Item)> + Send + Sync + 'a>;
 /// A mutable iterator type over `Table`'s key/value pairs.
-pub type IterMut<'a> = Box<dyn Iterator<Item = (KeyMut<'a>, &'a mut Item)> + 'a>;
+pub type IterMut<'a> = Box<dyn Iterator<Item = (KeyMut<'a>, &'a mut Item)> + Send + Sync + 'a>;
 
 /// This trait represents either a `Table`, or an `InlineTable`.
 pub trait TableLike: crate::private::Sealed {

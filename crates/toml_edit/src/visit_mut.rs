@@ -116,7 +116,7 @@ pub trait VisitMut {
 
     /// [`visit_table_mut`](Self::visit_table_mut) and
     /// [`visit_inline_table_mut`](Self::visit_inline_table_mut) both recurse into this method.
-    fn visit_table_like_mut(&mut self, node: &mut dyn TableLike) {
+    fn visit_table_like_mut(&mut self, node: &mut (dyn TableLike + Send + Sync)) {
         visit_table_like_mut(self, node);
     }
 
@@ -190,7 +190,7 @@ where
     v.visit_table_like_mut(node);
 }
 
-pub fn visit_table_like_mut<V>(v: &mut V, node: &mut dyn TableLike)
+pub fn visit_table_like_mut<V>(v: &mut V, node: &mut (dyn TableLike + Send + Sync))
 where
     V: VisitMut + ?Sized,
 {
