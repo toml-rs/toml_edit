@@ -79,6 +79,7 @@ pub(crate) fn dec_int<'i>(input: &mut Input<'i>) -> PResult<&'i str> {
             )),
         )
             .recognize()
+            // Safety: DIGIT1_9, digit(), and `_` only covers ASCII ranges
             .map(|b: &[u8]| unsafe {
                 from_utf8_unchecked(b, "`digit` and `_` filter out non-ASCII")
             })
@@ -86,6 +87,7 @@ pub(crate) fn dec_int<'i>(input: &mut Input<'i>) -> PResult<&'i str> {
     )
     .parse_next(input)
 }
+/// Safety-usable invariant: DIGIT1_9 is only ASCII ranges
 const DIGIT1_9: RangeInclusive<u8> = b'1'..=b'9';
 
 // hex-prefix = %x30.78               ; 0x
@@ -114,11 +116,13 @@ pub(crate) fn hex_int<'i>(input: &mut Input<'i>) -> PResult<&'i str> {
             ))
             .recognize(),
         )
+        // Safety: HEX_PREFIX, hexdig(), and `_` only covers ASCII ranges
         .map(|b| unsafe { from_utf8_unchecked(b, "`hexdig` and `_` filter out non-ASCII") })
         .context(StrContext::Label("hexadecimal integer")),
     )
     .parse_next(input)
 }
+/// Safety-usable invariant: HEX_PREFIX is ASCII only
 const HEX_PREFIX: &[u8] = b"0x";
 
 // oct-prefix = %x30.6F               ; 0o
@@ -147,12 +151,15 @@ pub(crate) fn oct_int<'i>(input: &mut Input<'i>) -> PResult<&'i str> {
             ))
             .recognize(),
         )
+        // Safety: DIGIT0_7, OCT_PREFIX, and `_` only covers ASCII ranges
         .map(|b| unsafe { from_utf8_unchecked(b, "`DIGIT0_7` and `_` filter out non-ASCII") })
         .context(StrContext::Label("octal integer")),
     )
     .parse_next(input)
 }
+/// Safety-usable invariant: OCT_PREFIX is ASCII only
 const OCT_PREFIX: &[u8] = b"0o";
+/// Safety-usable invariant: DIGIT0_7 is ASCII only
 const DIGIT0_7: RangeInclusive<u8> = b'0'..=b'7';
 
 // bin-prefix = %x30.62               ; 0b
@@ -181,12 +188,15 @@ pub(crate) fn bin_int<'i>(input: &mut Input<'i>) -> PResult<&'i str> {
             ))
             .recognize(),
         )
+        // Safety: DIGIT0_1, BIN_PREFIX, and `_` only covers ASCII ranges
         .map(|b| unsafe { from_utf8_unchecked(b, "`DIGIT0_1` and `_` filter out non-ASCII") })
         .context(StrContext::Label("binary integer")),
     )
     .parse_next(input)
 }
+/// Safety-usable invariant: BIN_PREFIX is ASCII only
 const BIN_PREFIX: &[u8] = b"0b";
+/// Safety-usable invariant: DIGIT0_1 is ASCII only
 const DIGIT0_1: RangeInclusive<u8> = b'0'..=b'1';
 
 // ;; Float
@@ -234,6 +244,7 @@ pub(crate) fn frac<'i>(input: &mut Input<'i>) -> PResult<&'i str> {
     )
         .recognize()
         .map(|b: &[u8]| unsafe {
+            // Safety: `.` and `zero_prefixable_int` only handle ASCII
             from_utf8_unchecked(
                 b,
                 "`.` and `parse_zero_prefixable_int` filter out non-ASCII",
@@ -243,6 +254,7 @@ pub(crate) fn frac<'i>(input: &mut Input<'i>) -> PResult<&'i str> {
 }
 
 // zero-prefixable-int = DIGIT *( DIGIT / underscore DIGIT )
+/// Safety-usable invariant: only produces ASCII
 pub(crate) fn zero_prefixable_int<'i>(input: &mut Input<'i>) -> PResult<&'i str> {
     (
         digit,
@@ -261,8 +273,10 @@ pub(crate) fn zero_prefixable_int<'i>(input: &mut Input<'i>) -> PResult<&'i str>
         .map(|()| ()),
     )
         .recognize()
+        // Safety: `digit()` and `_` are all ASCII
         .map(|b: &[u8]| unsafe { from_utf8_unchecked(b, "`digit` and `_` filter out non-ASCII") })
         .parse_next(input)
+    /// Safety-usable invariant upheld by only using `digit` and `_` in the parser
 }
 
 // exp = "e" float-exp-part
@@ -275,6 +289,7 @@ pub(crate) fn exp<'i>(input: &mut Input<'i>) -> PResult<&'i str> {
     )
         .recognize()
         .map(|b: &[u8]| unsafe {
+            // Safety: `e`, `E`, `+`, `-`, and `zero_prefixable_int` are all ASCII
             from_utf8_unchecked(
                 b,
                 "`one_of` and `parse_zero_prefixable_int` filter out non-ASCII",
@@ -305,15 +320,20 @@ pub(crate) fn nan(input: &mut Input<'_>) -> PResult<f64> {
 const NAN: &[u8] = b"nan";
 
 // DIGIT = %x30-39 ; 0-9
+/// Safety-usable invariant: only parses ASCII
 pub(crate) fn digit(input: &mut Input<'_>) -> PResult<u8> {
+    // Safety: DIGIT is all ASCII
     one_of(DIGIT).parse_next(input)
 }
 const DIGIT: RangeInclusive<u8> = b'0'..=b'9';
 
 // HEXDIG = DIGIT / "A" / "B" / "C" / "D" / "E" / "F"
+/// Safety-usable invariant: only parses ASCII
 pub(crate) fn hexdig(input: &mut Input<'_>) -> PResult<u8> {
+    // Safety: HEXDIG is all ASCII
     one_of(HEXDIG).parse_next(input)
 }
+/// Safety-usable invariant: only ASCII ranges
 pub(crate) const HEXDIG: (RangeInclusive<u8>, RangeInclusive<u8>, RangeInclusive<u8>) =
     (DIGIT, b'A'..=b'F', b'a'..=b'f');
 

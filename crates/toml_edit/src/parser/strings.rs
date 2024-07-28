@@ -138,6 +138,7 @@ fn escape_seq_char(input: &mut Input<'_>) -> PResult<char> {
 pub(crate) fn hexescape<const N: usize>(input: &mut Input<'_>) -> PResult<char> {
     take_while(0..=N, HEXDIG)
         .verify(|b: &[u8]| b.len() == N)
+        // Safety: HEXDIG is ASCII-only
         .map(|b: &[u8]| unsafe { from_utf8_unchecked(b, "`is_ascii_digit` filters out on-ASCII") })
         .verify_map(|s| u32::from_str_radix(s, 16).ok())
         .try_map(|h| char::from_u32(h).ok_or(CustomError::OutOfRange))
@@ -217,6 +218,8 @@ fn mlb_quotes<'i>(
     move |input: &mut Input<'i>| {
         let start = input.checkpoint();
         let res = terminated(b"\"\"", peek(term.by_ref()))
+            // Safety: terminated returns the output of the first parser here,
+            // which only parses ASCII
             .map(|b| unsafe { from_utf8_unchecked(b, "`bytes` out non-ASCII") })
             .parse_next(input);
 
@@ -224,6 +227,8 @@ fn mlb_quotes<'i>(
             Err(winnow::error::ErrMode::Backtrack(_)) => {
                 input.reset(&start);
                 terminated(b"\"", peek(term.by_ref()))
+                    // Safety: terminated returns the output of the first parser here,
+                    // which only parses ASCII
                     .map(|b| unsafe { from_utf8_unchecked(b, "`bytes` out non-ASCII") })
                     .parse_next(input)
             }
@@ -346,6 +351,8 @@ fn mll_quotes<'i>(
     move |input: &mut Input<'i>| {
         let start = input.checkpoint();
         let res = terminated(b"''", peek(term.by_ref()))
+            // Safety: terminated returns the output of the first parser here,
+            // which only parses ASCII
             .map(|b| unsafe { from_utf8_unchecked(b, "`bytes` out non-ASCII") })
             .parse_next(input);
 
@@ -353,6 +360,8 @@ fn mll_quotes<'i>(
             Err(winnow::error::ErrMode::Backtrack(_)) => {
                 input.reset(&start);
                 terminated(b"'", peek(term.by_ref()))
+                    // Safety: terminated returns the output of the first parser here,
+                    // which only parses ASCII
                     .map(|b| unsafe { from_utf8_unchecked(b, "`bytes` out non-ASCII") })
                     .parse_next(input)
             }

@@ -90,6 +90,7 @@ pub(crate) fn simple_key(input: &mut Input<'_>) -> PResult<(RawString, InternalS
 fn unquoted_key<'i>(input: &mut Input<'i>) -> PResult<&'i str> {
     trace(
         "unquoted-key",
+        // Safety: UNQUOTED_CHAR is only ASCII ranges
         take_while(1.., UNQUOTED_CHAR)
             .map(|b| unsafe { from_utf8_unchecked(b, "`is_unquoted_char` filters out on-ASCII") }),
     )
@@ -101,6 +102,7 @@ pub(crate) fn is_unquoted_char(c: u8) -> bool {
     UNQUOTED_CHAR.contains_token(c)
 }
 
+// Safety-usable invariant: UNQUOTED_CHAR is only ASCII ranges
 const UNQUOTED_CHAR: (
     RangeInclusive<u8>,
     RangeInclusive<u8>,

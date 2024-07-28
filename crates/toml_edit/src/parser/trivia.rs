@@ -11,6 +11,7 @@ use winnow::token::take_while;
 
 use crate::parser::prelude::*;
 
+/// Safety invariant: must be called with valid UTF-8 in `bytes`
 pub(crate) unsafe fn from_utf8_unchecked<'b>(
     bytes: &'b [u8],
     safety_justification: &'static str,
@@ -27,10 +28,12 @@ pub(crate) unsafe fn from_utf8_unchecked<'b>(
 
 // wschar = ( %x20 /              ; Space
 //            %x09 )              ; Horizontal tab
+/// Safety-usable invariant: WSCHAR is only ASCII values
 pub(crate) const WSCHAR: (u8, u8) = (b' ', b'\t');
 
 // ws = *wschar
 pub(crate) fn ws<'i>(input: &mut Input<'i>) -> PResult<&'i str> {
+    // Safety: WSCHAR only contains ASCII
     take_while(0.., WSCHAR)
         .map(|b| unsafe { from_utf8_unchecked(b, "`is_wschar` filters out on-ASCII") })
         .parse_next(input)
@@ -58,8 +61,10 @@ pub(crate) fn comment<'i>(input: &mut Input<'i>) -> PResult<&'i [u8]> {
 
 // newline = ( %x0A /              ; LF
 //             %x0D.0A )           ; CRLF
+/// Safety-usable invariant: Only returns ASCII bytes
 pub(crate) fn newline(input: &mut Input<'_>) -> PResult<u8> {
     alt((
+        // Safety: CR and LF are ASCII
         one_of(LF).value(b'\n'),
         (one_of(CR), one_of(LF)).value(b'\n'),
     ))
@@ -76,6 +81,7 @@ pub(crate) fn ws_newline<'i>(input: &mut Input<'i>) -> PResult<&'i str> {
     )
     .map(|()| ())
     .recognize()
+    // Safety: `newline` and `WSCHAR` are all ASCII
     .map(|b| unsafe { from_utf8_unchecked(b, "`is_wschar` and `newline` filters out on-ASCII") })
     .parse_next(input)
 }
@@ -85,6 +91,7 @@ pub(crate) fn ws_newlines<'i>(input: &mut Input<'i>) -> PResult<&'i str> {
     (newline, ws_newline)
         .recognize()
         .map(|b| unsafe {
+    // Safety: `newline` and `WSCHAR` are all ASCII
             from_utf8_unchecked(b, "`is_wschar` and `newline` filters out on-ASCII")
         })
         .parse_next(input)

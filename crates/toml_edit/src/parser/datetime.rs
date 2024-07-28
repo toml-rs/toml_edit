@@ -255,6 +255,7 @@ pub(crate) fn unsigned_digits<'i, const MIN: usize, const MAX: usize>(
     input: &mut Input<'i>,
 ) -> PResult<&'i str> {
     take_while(MIN..=MAX, DIGIT)
+        // Safety: `digit` only produces ASCII
         .map(|b: &[u8]| unsafe { from_utf8_unchecked(b, "`is_ascii_digit` filters out on-ASCII") })
         .parse_next(input)
 }
