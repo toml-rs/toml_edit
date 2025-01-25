@@ -19,6 +19,17 @@ use crate::value::{Array, Table, Value};
 ///
 /// println!("{:#?}", cargo_toml);
 /// ```
+///
+/// External identifiers and Rust expressions (between parentheses) are allowed.
+///
+/// ```rust
+/// let some_value = "Hello, world!";
+/// let toml_doc = toml::toml! {
+///     external_ident = some_value
+///     rust_expr = (u16::MAX - 1)
+/// };
+/// println!("{:#?}", toml_doc);
+/// ```
 #[macro_export]
 macro_rules! toml {
     ($($toml:tt)+) => {{
