@@ -14,7 +14,7 @@ serde = { version = "1.0.197", features = ["derive"] }
 [dev-dependencies]
 toml = { path = "../toml" }
 toml_edit = { path = "../toml_edit" }
-toml_old = { version = "0.5.10", package = "toml" }
+toml_old = { version = "0.8.0", package = "toml" }
 serde_json = "1.0.116"
 lexopt = "0.3.0"
 divan = "0.1.14"
