@@ -85,6 +85,7 @@ mod error;
 mod index;
 mod inline_table;
 mod internal_string;
+mod internal_table;
 mod item;
 mod key;
 #[cfg(feature = "parse")]

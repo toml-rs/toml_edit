@@ -3,6 +3,7 @@ use std::iter::FromIterator;
 use crate::key::Key;
 use crate::repr::Decor;
 use crate::table::{Iter, IterMut, KeyValuePairs, TableLike};
+use crate::internal_table::{GetTableValues, SortTable, SortTableBy};
 use crate::{InternalString, Item, KeyMut, RawString, Table, Value};
 
 /// Type representing a TOML inline table,
@@ -51,30 +52,7 @@ impl InlineTable {
     ///
     /// For example, this will return dotted keys
     pub fn get_values(&self) -> Vec<(Vec<&Key>, &Value)> {
-        let mut values = Vec::new();
-        let root = Vec::new();
-        self.append_values(&root, &mut values);
-        values
-    }
-
-    pub(crate) fn append_values<'s>(
-        &'s self,
-        parent: &[&'s Key],
-        values: &mut Vec<(Vec<&'s Key>, &'s Value)>,
-    ) {
-        for (key, value) in self.items.iter() {
-            let mut path = parent.to_vec();
-            path.push(key);
-            match value {
-                Item::Value(Value::InlineTable(table)) if table.is_dotted() => {
-                    table.append_values(&path, values);
-                }
-                Item::Value(value) => {
-                    values.push((path, value));
-                }
-                _ => {}
-            }
-        }
+        GetTableValues::get_values(self)
     }
 
     /// Auto formats the table.
@@ -84,52 +62,18 @@ impl InlineTable {
 
     /// Sorts the key/value pairs by key.
     pub fn sort_values(&mut self) {
-        // Assuming standard tables have their position set and this won't negatively impact them
-        self.items.sort_keys();
-        for value in self.items.values_mut() {
-            match value {
-                Item::Value(Value::InlineTable(table)) if table.is_dotted() => {
-                    table.sort_values();
-                }
-                _ => {}
-            }
-        }
+        SortTable::sort_values(self)
     }
 
     /// Sort Key/Value Pairs of the table using the using the comparison function `compare`.
     ///
     /// The comparison function receives two key and value pairs to compare (you can sort by keys or
     /// values or their combination as needed).
-    pub fn sort_values_by<F>(&mut self, mut compare: F)
+    pub fn sort_values_by<F>(&mut self, compare: F)
     where
         F: FnMut(&Key, &Value, &Key, &Value) -> std::cmp::Ordering,
     {
-        self.sort_values_by_internal(&mut compare);
-    }
-
-    fn sort_values_by_internal<F>(&mut self, compare: &mut F)
-    where
-        F: FnMut(&Key, &Value, &Key, &Value) -> std::cmp::Ordering,
-    {
-        let modified_cmp =
-            |key1: &Key, val1: &Item, key2: &Key, val2: &Item| -> std::cmp::Ordering {
-                match (val1.as_value(), val2.as_value()) {
-                    (Some(v1), Some(v2)) => compare(key1, v1, key2, v2),
-                    (Some(_), None) => std::cmp::Ordering::Greater,
-                    (None, Some(_)) => std::cmp::Ordering::Less,
-                    (None, None) => std::cmp::Ordering::Equal,
-                }
-            };
-
-        self.items.sort_by(modified_cmp);
-        for value in self.items.values_mut() {
-            match value {
-                Item::Value(Value::InlineTable(table)) if table.is_dotted() => {
-                    table.sort_values_by_internal(compare);
-                }
-                _ => {}
-            }
-        }
+        SortTableBy::<Value>::sort_values_by(self, compare)
     }
 
     /// If a table has no key/value pairs and implicit, it will not be displayed.

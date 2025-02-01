@@ -215,6 +215,20 @@ key = "value"
 "#,
             r#"hello.world = "a"
 "#,
+            r#"
+hello.world = "a"
+goodbye = "b"
+hello.moon = "c"
+"#,
+            r#"
+tool1.featureA = "foo"
+# note this must match the above line, ask Dave why
+tool2.featureA = "foo"
+
+# these two values must always add to 9 because reasons
+tool1.featureB = -1
+tool3.featureB = 10
+"#,
             r#"foo = 1979-05-27 # Comment
 "#,
         ];

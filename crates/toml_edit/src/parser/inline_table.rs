@@ -40,7 +40,8 @@ fn table_from_pairs(
     // Assuming almost all pairs will be directly in `root`
     root.items.reserve(v.len());
 
-    for (path, (key, value)) in v {
+    for (position, (path, (mut key, value))) in v.into_iter().enumerate() {
+        key.set_position(Some(position));
         let table = descend_path(&mut root, &path)?;
 
         // "Likewise, using dotted keys to redefine tables already defined in [table] form is not allowed"
@@ -162,6 +163,7 @@ mod test {
             r#"{a = 1e165}"#,
             r#"{ hello = "world", a = 1}"#,
             r#"{ hello.world = "a" }"#,
+            r#"{ hello.world = "a", goodbye = "b", hello.moon = "c" }"#,
         ];
         for input in inputs {
             dbg!(input);

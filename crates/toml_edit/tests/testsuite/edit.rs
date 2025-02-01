@@ -26,8 +26,10 @@ struct Test {
 
 fn given(input: &str) -> Test {
     let doc = input.parse::<DocumentMut>();
-    assert!(doc.is_ok());
-    Test { doc: doc.unwrap() }
+    match doc {
+        Err(e) => panic!("{}", e),
+        _ => Test { doc: doc.unwrap() }
+    }
 }
 
 impl Test {
@@ -580,6 +582,42 @@ fn test_sort_values() {
 }
 
 #[test]
+fn test_sort_dotted_values() {
+    given(
+        r#"
+        [a.z]
+
+        [a]
+        a.b = 2
+        # this comment is attached to b
+        b = 3 # as well as this
+        a.a = 1
+        c = 4
+
+        [a.y]"#,
+    )
+        .running(|root| {
+            let a = root.get_mut("a").unwrap();
+            let a = as_table!(a);
+            a.sort_values();
+        })
+        .produces_display(str![[r#"
+
+        [a.z]
+
+        [a]
+        a.a = 1
+        a.b = 2
+        # this comment is attached to b
+        b = 3 # as well as this
+        c = 4
+
+        [a.y]
+
+"#]]);
+}
+
+#[test]
 fn test_sort_values_by() {
     given(
         r#"
@@ -1025,4 +1063,119 @@ name = "test.swf"
 
 "#]]
     );
+}
+
+#[test]
+fn modify_dotted_keys() {
+    given(r#"
+tool1.featureA = "foo"
+# note this must match the above line, ask Dave why
+tool2.featureA = "foo"
+
+# these two values must always add to 9 because reasons
+tool1.featureB = -1
+tool3.featureB = 10
+"#)
+    .running_on_doc(|doc| {
+        let first_tool_k = "tool1";
+        let second_tool_k = "tool3";
+        let feature_k = "featureB";
+        let root = doc.as_table_mut();
+
+        let tool1_v = root.get_mut(first_tool_k).unwrap();
+        let tool1: &mut Table = as_table!(tool1_v);
+        let tool1_b = tool1.get_mut(feature_k).unwrap().as_integer().unwrap();
+
+        let tool3_v = root.get_mut(second_tool_k).unwrap();
+        let tool3: &mut Table = as_table!(tool3_v);
+        let tool3_b = tool3.get_mut(feature_k).unwrap().as_integer().unwrap();
+
+        let total = (tool1_b + tool3_b) as f64;
+        let split_val = (total / 2.0) as i64;
+        let mut split_val2 = split_val;
+        if split_val * 2 != total as i64 {
+            split_val2 += 1
+        }
+
+        root[first_tool_k][feature_k] = Item::from(split_val);
+        root[second_tool_k][feature_k] = Item::from(split_val2);
+    })
+    .produces_display(str![[
+        r#"
+
+tool1.featureA = "foo"
+# note this must match the above line, ask Dave why
+tool2.featureA = "foo"
+
+# these two values must always add to 9 because reasons
+tool1.featureB = 4
+tool3.featureB = 5
+
+"#
+    ]]);
+}
+
+#[test]
+fn insert_key_with_position() {
+    given(r#"foo.bar = 1
+
+foo.baz.qwer = "a"
+goodbye = { forever="no" }
+
+foo.pub = 2
+foo.baz.asdf = "b"
+"#)
+    .running_on_doc(|doc| {
+        let root = doc.as_table_mut();
+        let (_, foo_v) = root.get_key_value_mut("foo").unwrap();
+        let foo = as_table!(foo_v);
+        let (_, foo_baz_v) = foo.get_key_value_mut("baz").unwrap();
+        let foo_baz = as_table!(foo_baz_v);
+
+        let foo_baz_asdf_v = foo_baz.remove("asdf").unwrap();
+        let foo_baz_asdf_k = Key::new("asdf").with_position(Some(0));
+
+        foo_baz.insert_formatted(&foo_baz_asdf_k, foo_baz_asdf_v);
+    })
+    .produces_display(str![[r#"foo.bar = 1
+foo.baz.asdf = "b"
+
+foo.baz.qwer = "a"
+goodbye = { forever="no" }
+
+foo.pub = 2
+
+"#]]);
+}
+
+#[test]
+fn insert_key_with_position_none() {
+    given(r#"foo.bar = 1
+
+foo.baz.qwer = "a"
+goodbye = { forever="no" }
+
+foo.pub = 2
+foo.baz.asdf = "b"
+"#)
+    .running_on_doc(|doc| {
+        let root = doc.as_table_mut();
+        let (_, foo_v) = root.get_key_value_mut("foo").unwrap();
+        let foo = as_table!(foo_v);
+        let (_, foo_baz_v) = foo.get_key_value_mut("baz").unwrap();
+        let foo_baz = as_table!(foo_baz_v);
+
+        let foo_baz_asdf_v = foo_baz.remove("qwer").unwrap();
+        let foo_baz_asdf_k = Key::new("qwer").with_position(None);
+
+        foo_baz.insert_formatted(&foo_baz_asdf_k, foo_baz_asdf_v);
+    })
+    .produces_display(str![[r#"foo.bar = 1
+goodbye = { forever="no" }
+
+foo.pub = 2
+foo.baz.asdf = "b"
+foo.baz.qwer = "a"
+
+"#]]);
 }

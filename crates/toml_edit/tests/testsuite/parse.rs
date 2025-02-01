@@ -1606,6 +1606,25 @@ clippy.exhaustive_enums = "warn"
 }
 
 #[test]
+fn dotted_key_interspersed_roundtrip() {
+    let input = r###"
+rust.unsafe_op_in_unsafe_fn = "deny"
+
+clippy.cast_lossless = "warn"
+rust.explicit_outlives_requirements = "warn"
+
+clippy.doc_markdown = "warn"
+clippy.exhaustive_enums = "warn"
+"###;
+    let expected = input;
+
+    let manifest: DocumentMut = input.parse().unwrap();
+    let actual = manifest.to_string();
+
+    assert_data_eq!(actual, expected.raw());
+}
+
+#[test]
 fn string_repr_roundtrip() {
     assert_string_repr_roundtrip(r#""""#, str![[r#""""#]]);
     assert_string_repr_roundtrip(r#""a""#, str![[r#""a""#]]);

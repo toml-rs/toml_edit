@@ -5,6 +5,7 @@ use indexmap::map::IndexMap;
 use crate::key::Key;
 use crate::repr::Decor;
 use crate::value::DEFAULT_VALUE_DECOR;
+use crate::internal_table::{GetTableValues, SortTable, SortTableBy};
 use crate::{InlineTable, InternalString, Item, KeyMut, Value};
 
 /// Type representing a TOML non-inline table
@@ -64,38 +65,7 @@ impl Table {
     ///
     /// For example, this will return dotted keys
     pub fn get_values(&self) -> Vec<(Vec<&Key>, &Value)> {
-        let mut values = Vec::new();
-        let root = Vec::new();
-        self.append_values(&root, &mut values);
-        values
-    }
-
-    fn append_values<'s>(
-        &'s self,
-        parent: &[&'s Key],
-        values: &mut Vec<(Vec<&'s Key>, &'s Value)>,
-    ) {
-        for (key, value) in self.items.iter() {
-            let mut path = parent.to_vec();
-            path.push(key);
-            match value {
-                Item::Table(table) if table.is_dotted() => {
-                    table.append_values(&path, values);
-                }
-                Item::Value(value) => {
-                    if let Some(table) = value.as_inline_table() {
-                        if table.is_dotted() {
-                            table.append_values(&path, values);
-                        } else {
-                            values.push((path, value));
-                        }
-                    } else {
-                        values.push((path, value));
-                    }
-                }
-                _ => {}
-            }
-        }
+        GetTableValues::get_values(self)
     }
 
     /// Auto formats the table.
@@ -107,48 +77,18 @@ impl Table {
     ///
     /// Doesn't affect subtables or subarrays.
     pub fn sort_values(&mut self) {
-        // Assuming standard tables have their doc_position set and this won't negatively impact them
-        self.items.sort_keys();
-        for value in self.items.values_mut() {
-            match value {
-                Item::Table(table) if table.is_dotted() => {
-                    table.sort_values();
-                }
-                _ => {}
-            }
-        }
+        SortTable::sort_values(self)
     }
 
     /// Sort Key/Value Pairs of the table using the using the comparison function `compare`.
     ///
     /// The comparison function receives two key and value pairs to compare (you can sort by keys or
     /// values or their combination as needed).
-    pub fn sort_values_by<F>(&mut self, mut compare: F)
+    pub fn sort_values_by<F>(&mut self, compare: F)
     where
         F: FnMut(&Key, &Item, &Key, &Item) -> std::cmp::Ordering,
     {
-        self.sort_values_by_internal(&mut compare);
-    }
-
-    fn sort_values_by_internal<F>(&mut self, compare: &mut F)
-    where
-        F: FnMut(&Key, &Item, &Key, &Item) -> std::cmp::Ordering,
-    {
-        let modified_cmp =
-            |key1: &Key, val1: &Item, key2: &Key, val2: &Item| -> std::cmp::Ordering {
-                compare(key1, val1, key2, val2)
-            };
-
-        self.items.sort_by(modified_cmp);
-
-        for value in self.items.values_mut() {
-            match value {
-                Item::Table(table) if table.is_dotted() => {
-                    table.sort_values_by_internal(compare);
-                }
-                _ => {}
-            }
-        }
+        SortTableBy::<Item>::sort_values_by(self, compare)
     }
 
     /// If a table has no key/value pairs and implicit, it will not be displayed.

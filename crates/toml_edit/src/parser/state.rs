@@ -7,6 +7,8 @@ pub(crate) struct ParseState {
     root: Table,
     trailing: Option<std::ops::Range<usize>>,
     current_table_position: usize,
+    // Current position within a table, to help order dotted keys
+    current_value_position: usize,
     current_table: Table,
     current_is_array: bool,
     current_table_path: Vec<Key>,
@@ -20,6 +22,7 @@ impl ParseState {
             root: Table::new(),
             trailing: None,
             current_table_position: 0,
+            current_value_position: 0,
             current_table: root,
             current_is_array: false,
             current_table_path: Vec::new(),
@@ -74,6 +77,9 @@ impl ParseState {
         if let (Some(existing), Some(value)) = (self.current_table.span(), value.span()) {
             self.current_table.span = Some((existing.start)..(value.end));
         }
+        key.set_position(Some(self.current_value_position));
+        self.current_value_position += 1;
+
         let table = &mut self.current_table;
         let table = Self::descend_path(table, &path, true)?;
 
@@ -161,6 +167,7 @@ impl ParseState {
         }
 
         self.current_table_position += 1;
+        self.current_value_position = 0;
         self.current_table.decor = decor;
         self.current_table.set_implicit(false);
         self.current_table.set_dotted(false);

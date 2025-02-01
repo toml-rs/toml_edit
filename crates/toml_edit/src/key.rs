@@ -32,6 +32,7 @@ pub struct Key {
     pub(crate) repr: Option<Repr>,
     pub(crate) leaf_decor: Decor,
     pub(crate) dotted_decor: Decor,
+    pub(crate) position: Option<usize>,
 }
 
 impl Key {
@@ -42,6 +43,7 @@ impl Key {
             repr: None,
             leaf_decor: Default::default(),
             dotted_decor: Default::default(),
+            position: Default::default(),
         }
     }
 
@@ -73,6 +75,12 @@ impl Key {
     /// While creating the `Key`, add `Decor` to it for between dots
     pub fn with_dotted_decor(mut self, decor: Decor) -> Self {
         self.dotted_decor = decor;
+        self
+    }
+
+    /// While creating the `Key`, add a table position to it
+    pub fn with_position(mut self, position: Option<usize>) -> Self {
+        self.position = position;
         self
     }
 
@@ -158,6 +166,16 @@ impl Key {
         }
     }
 
+    /// Get the position relative to other keys in parent table
+    pub fn position(&self) -> Option<usize> {
+        self.position
+    }
+
+    /// Set the position relative to other keys in parent table
+    pub fn set_position(&mut self, position: Option<usize>) {
+        self.position = position;
+    }
+
     /// Auto formats the key.
     pub fn fmt(&mut self) {
         self.repr = None;
@@ -190,6 +208,7 @@ impl Clone for Key {
             repr: self.repr.clone(),
             leaf_decor: self.leaf_decor.clone(),
             dotted_decor: self.dotted_decor.clone(),
+            position: self.position,
         }
     }
 }
